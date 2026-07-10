@@ -1,0 +1,105 @@
+import axios from 'axios';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+
+const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 15000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Request interceptor – attach session_id if available
+apiClient.interceptors.request.use(
+  (config) => {
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor – handle common errors
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response) {
+      const { status } = error.response;
+      
+      if (status === 404) {
+        // Session expired
+        console.warn('[Signet API] Session not found or expired.');
+      } else if (status === 429) {
+        console.warn('[Signet API] Rate limited. Please wait.');
+      } else if (status === 503 || status === 504) {
+        console.warn('[Signet API] Service unavailable.');
+      }
+    } else if (error.code === 'ERR_NETWORK') {
+      console.warn('[Signet API] Network error – are you offline?');
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+/**
+ * Upload a WhatsApp .txt file
+ * @param {File} file - The .txt file
+ * @param {string} userName - User's name as it appears in the chat
+ * @param {function} onProgress - Upload progress callback (0-100)
+ */
+export const uploadChat = async (file, userName, onProgress) => {
+  const formData = new FormData();
+  formData.append('chatFile', file);
+  formData.append('user_name', userName);
+
+  const response = await apiClient.post('/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+    onUploadProgress: (progressEvent) => {
+      if (onProgress && progressEvent.total) {
+        const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        onProgress(percent);
+      }
+    },
+  });
+
+  return response.data;
+};
+
+/**
+ * Send a message to the AI clone
+ * @param {string} sessionId
+ * @param {string} incomingMessage
+ * @param {number} temperature (optional, default 0.7)
+ */
+export const sendMessage = async (sessionId, incomingMessage, temperature = 0.7) => {
+  const response = await apiClient.post('/chat', {
+    session_id: sessionId,
+    incoming_message: incomingMessage,
+    temperature,
+  });
+
+  return response.data;
+};
+
+/**
+ * Get session stats
+ * @param {string} sessionId
+ */
+export const getStats = async (sessionId) => {
+  const response = await apiClient.get(`/stats/${sessionId}`);
+  return response.data;
+};
+
+/**
+ * Delete/clear a session
+ * @param {string} sessionId
+ */
+export const clearSession = async (sessionId) => {
+  await apiClient.delete(`/session/${sessionId}`);
+};
+
+export default apiClient;
