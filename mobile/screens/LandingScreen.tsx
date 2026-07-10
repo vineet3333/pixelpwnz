@@ -90,7 +90,7 @@ export default function LandingScreen({ navigation }: Props) {
 
   const handleGuestLogin = async () => {
     try {
-      // Simulate Guest Login by generating a random guest account
+      // Try to register a guest account on the backend
       const randomId = Math.floor(Math.random() * 1000000);
       const email = `guest${randomId}@signet.ai`;
       const password = 'guestpassword';
@@ -104,7 +104,13 @@ export default function LandingScreen({ navigation }: Props) {
         dispatch(setAuthCredentials({ token: data.token, user: data.user }));
       }
     } catch (err) {
-      console.error('Guest login failed:', err);
+      // Backend unreachable — fall back to offline guest mode
+      console.warn('Backend unavailable, entering offline guest mode');
+      const { setAuthCredentials } = require('../store/authSlice');
+      dispatch(setAuthCredentials({
+        token: 'guest-offline',
+        user: { id: 'guest', email: 'guest@signet.ai', name: 'Guest' },
+      }));
     }
   };
 
