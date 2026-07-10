@@ -11,28 +11,58 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const CATEGORIES = ['Explore', 'Trending', 'Celebrities', 'Anime', 'Historical', 'Sports', 'Fictional'];
 
-const MOCK_PERSONAS = [
-  { id: '1', title: 'Elon Musk', sub: 'CEO of Tesla & SpaceX. Let\'s talk Mars.', author: '@signet', interactions: '4.2m', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&q=80' },
-  { id: '2', title: 'Naruto Uzumaki', sub: 'Believe it! Future Hokage of the Leaf.', author: '@signet', interactions: '8.5m', image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80' },
-  { id: '3', title: 'Iron Man', sub: 'Genius, billionaire, philanthropist.', author: '@signet', interactions: '6.1m', image: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&q=80' },
-  { id: '4', title: 'Cristiano Ronaldo', sub: 'SIUUUU! Legend of football.', author: '@signet', interactions: '12.6m', image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&q=80' },
-  { id: '5', title: 'Albert Einstein', sub: 'Let me explain relativity simply.', author: '@signet', interactions: '3.8m', image: 'https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=400&q=80' },
-  { id: '6', title: 'Sherlock Holmes', sub: 'The game is afoot, Watson.', author: '@signet', interactions: '5.2m', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=80' },
-  { id: '7', title: 'Cleopatra', sub: 'Queen of Egypt. Ruler of Nile.', author: '@signet', interactions: '2.1m', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&q=80' },
-  { id: '8', title: 'Goku', sub: 'Always ready for a fight!', author: '@signet', interactions: '9.7m', image: 'https://images.unsplash.com/photo-1504257432389-523431e15ce3?w=400&q=80' },
-];
-
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - Spacing.lg * 2 - 12) / 2;
 
 export default function DiscoverScreen() {
   const [activeTab, setActiveTab] = useState('Explore');
   const [searchQuery, setSearchQuery] = useState('');
+  const [personas, setPersonas] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
   const navigation = useNavigation<NavigationProp>();
 
+  React.useEffect(() => {
+    const fetchPersonas = async () => {
+      try {
+        const { getPersonas } = require('../api/client');
+        const data = await getPersonas();
+        if (data.success && data.personas) {
+          const mapped = data.personas.map((p: any) => {
+            let image = 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&q=80';
+            let sub = 'Public Persona';
+            if (p.id === 'pirate') {
+              image = 'https://images.unsplash.com/photo-1549488344-c6c747971775?w=400&q=80';
+              sub = 'Ahoy there, matey!';
+            } else if (p.id === 'shakespeare') {
+              image = 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=400&q=80';
+              sub = 'To be, or not to be...';
+            } else if (p.id === 'bro') {
+              image = 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=400&q=80';
+              sub = 'Do you even lift, bro?';
+            }
+            return {
+              id: p.id,
+              title: p.name,
+              sub,
+              author: '@signet',
+              interactions: (Math.random() * 10).toFixed(1) + 'm',
+              image
+            };
+          });
+          setPersonas(mapped);
+        }
+      } catch (err) {
+        console.error('Failed to fetch personas:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPersonas();
+  }, []);
+
   const filteredPersonas = searchQuery.trim()
-    ? MOCK_PERSONAS.filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase()))
-    : MOCK_PERSONAS;
+    ? personas.filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase()))
+    : personas;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -61,19 +91,25 @@ export default function DiscoverScreen() {
       </View>
 
       {/* Category pills */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pillsContainer}>
-        {CATEGORIES.map((tab) => (
-          <TouchableOpacity
-            key={tab}
-            style={[styles.pill, activeTab === tab && styles.pillActive]}
-            onPress={() => setActiveTab(tab)}
-          >
-            <Text style={[styles.pillText, activeTab === tab && styles.pillTextActive]}>
-              {tab}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      <View style={styles.pillsWrapper}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pillsContainer}>
+          {CATEGORIES.map((tab, index) => (
+            <TouchableOpacity
+              key={tab}
+              style={[
+                styles.pill,
+                activeTab === tab && styles.pillActive,
+                { marginRight: index === CATEGORIES.length - 1 ? 0 : 8 }
+              ]}
+              onPress={() => setActiveTab(tab)}
+            >
+              <Text style={[styles.pillText, activeTab === tab && styles.pillTextActive]}>
+                {tab}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
 
       {/* Grid */}
       <FlatList
@@ -152,10 +188,13 @@ const styles = StyleSheet.create({
   },
 
   /* Pills */
+  pillsWrapper: {
+    height: 52,
+    marginBottom: Spacing.sm,
+  },
   pillsContainer: {
     paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.md,
-    gap: 8,
+    paddingVertical: 4,
   },
   pill: {
     paddingHorizontal: 18,

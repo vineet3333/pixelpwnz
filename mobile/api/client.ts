@@ -68,4 +68,9 @@ export const getProfile = async () => {
   return response.data;
 };
 
+export const getPersonas = async () => {
+  const response = await apiClient.get('/persona');
+  return response.data;
+};
+
 export default apiClient;
