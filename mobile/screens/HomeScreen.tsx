@@ -13,9 +13,9 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 /* ── Mock data ── */
 const MY_PERSONAS = [
-  { id: 'p1', name: 'My AI Clone', desc: 'Chats based on your personality', metaType: 'badge', metaText: 'Most used', avatar: 'https://i.pravatar.cc/150?img=11' },
-  { id: 'p2', name: 'Best Friend', desc: 'Fun • Sarcastic • Always there', metaType: 'text', metaText: 'Last chat 2h ago', avatar: 'https://i.pravatar.cc/150?img=5' },
-  { id: 'p3', name: 'College Buddy', desc: 'Study • Memes • Late night talks', metaType: 'text', metaText: 'Last chat yesterday', avatar: 'https://i.pravatar.cc/150?img=12' },
+  { id: 'p1', name: 'My AI Clone', desc: 'Replies as you with your tone & style', metaType: 'badge', metaText: 'Most used', avatar: 'https://i.pravatar.cc/150?img=11' },
+  { id: 'p2', name: 'Best Friend', desc: 'Casual • Fun • Sends memes for you', metaType: 'text', metaText: 'Replied 2h ago', avatar: 'https://i.pravatar.cc/150?img=5' },
+  { id: 'p3', name: 'College Buddy', desc: 'Chill • Study buddy • Night owl vibes', metaType: 'text', metaText: 'Replied yesterday', avatar: 'https://i.pravatar.cc/150?img=12' },
 ];
 
 export default function HomeScreen() {
@@ -57,7 +57,7 @@ export default function HomeScreen() {
         {/* TOP HEADER */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <FontAwesome5 name="sparkles" size={20} color={Colors.primarySolid} style={{ marginRight: 8 }} />
+            <FontAwesome5 name="shield-alt" size={20} color={Colors.primarySolid} style={{ marginRight: 8 }} />
             <Text style={styles.headerTitle}>Signet</Text>
           </View>
           <TouchableOpacity style={styles.searchBtn}>
@@ -115,19 +115,16 @@ export default function HomeScreen() {
           colors={['#F5F3FF', '#EEECFC']}
           style={styles.waBanner}
         >
-          <View style={styles.waIconContainer}>
-            <View style={styles.waIconBg}>
-              <FontAwesome5 name="whatsapp" size={26} color="#FFF" />
-            </View>
-            <FontAwesome5 name="sparkles" size={12} color="#A78BFA" style={{position: 'absolute', top: -5, left: -5}} />
+          <View style={styles.waIconBg}>
+            <FontAwesome5 name="whatsapp" size={24} color="#FFF" />
           </View>
           <View style={styles.waTextContainer}>
-            <Text style={styles.waTitle}>Talk with your persona on WhatsApp</Text>
-            <Text style={styles.waDesc}>Integrate your AI clone and chat seamlessly on WhatsApp.</Text>
+            <Text style={styles.waTitle}>Auto-reply on WhatsApp</Text>
+            <Text style={styles.waDesc}>Let your persona reply for you.</Text>
           </View>
           <TouchableOpacity style={styles.waBtn}>
-            <Text style={styles.waBtnText}>Integrate Now</Text>
-            <Feather name="chevron-right" size={14} color="#FFF" />
+            <Text style={styles.waBtnText}>Connect</Text>
+            <Feather name="arrow-right" size={14} color="#FFF" />
           </TouchableOpacity>
         </LinearGradient>
 
@@ -367,21 +364,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  waIconContainer: {
-    marginRight: 16,
-    position: 'relative',
-  },
   waIconBg: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: '#25D366',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#25D366',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    marginRight: 16,
   },
   waTextContainer: {
     flex: 1,
