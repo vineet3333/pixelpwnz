@@ -1,9 +1,9 @@
 import { embed, embedBatch } from './embedder.js';
 import { addVectors, queryVectors, deleteCollection, countVectors } from './chromaClient.js';
 import { retrieve } from './retriever.js';
-import { buildPrompts } from './promptBuilder.js';
+import { buildPrompts, buildToneProfile, buildSystemPrompt, buildUserPrompt } from './promptBuilder.js';
 
-export { embed, embedBatch, addVectors, queryVectors, deleteCollection, countVectors, retrieve, buildPrompts };
+export { embed, embedBatch, addVectors, queryVectors, deleteCollection, countVectors, retrieve, buildPrompts, buildToneProfile };
 
 /**
  * Full ingestion pipeline: embed all pairs and store in ChromaDB.
@@ -39,28 +39,36 @@ export async function ingestPairs(sessionId, pairs) {
 
 /**
  * Full RAG pipeline: retrieve examples + build prompts.
+ * To minimize latency on every request, the backend should pre-compute the toneProfile
+ * during ingestion and pass it here, rather than passing allPairs.
+ * 
  * @param {string} sessionId
  * @param {string} incomingMessage
  * @param {string} userName
- * @param {import('../types.js').ConversationPair[]} allPairs - for tone profile
+ * @param {object} context - Either { toneProfile } OR { allPairs }
  * @returns {Promise<{ systemPrompt: string, userPrompt: string, toneProfile: object, examples: object[], latencyMs: number }>}
  */
-export async function buildRAGPrompt(sessionId, incomingMessage, userName, allPairs) {
+export async function buildRAGPrompt(sessionId, incomingMessage, userName, context = {}) {
   const t0 = Date.now();
 
   const examples = await retrieve(sessionId, incomingMessage);
 
-  const { systemPrompt, userPrompt, toneProfile } = buildPrompts({
-    userName,
-    pairs: allPairs,
-    examples,
-    newMessage: incomingMessage,
-  });
+  let finalToneProfile = context.toneProfile;
+  if (!finalToneProfile && context.allPairs) {
+    // Fallback: compute on the fly if not cached (slower for huge histories)
+    finalToneProfile = buildToneProfile(context.allPairs);
+  } else if (!finalToneProfile) {
+    // Empty profile fallback
+    finalToneProfile = buildToneProfile([]);
+  }
+
+  const systemPrompt = buildSystemPrompt(userName, finalToneProfile);
+  const userPrompt = buildUserPrompt(userName, examples, incomingMessage);
 
   return {
     systemPrompt,
     userPrompt,
-    toneProfile,
+    toneProfile: finalToneProfile,
     examples,
     latencyMs: Date.now() - t0,
   };
