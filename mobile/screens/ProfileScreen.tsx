@@ -48,7 +48,7 @@ export default function ProfileScreen() {
           
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>3</Text>
+              <Text style={styles.statValue}>0</Text>
               <Text style={styles.statLabel}>personas</Text>
             </View>
             <View style={styles.statItem}>

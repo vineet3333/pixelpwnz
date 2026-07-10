@@ -12,12 +12,12 @@ import { addBookmark, removeBookmark } from '../store/bookmarksSlice';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-/* ── Mock data ── */
-const MY_PERSONAS = [
-  { id: 'p1', name: 'My AI Clone', desc: 'Replies as you with your tone & style', metaType: 'badge', metaText: 'Most used', avatar: 'https://i.pravatar.cc/150?img=11' },
-  { id: 'p2', name: 'Best Friend', desc: 'Casual • Fun • Sends memes for you', metaType: 'text', metaText: 'Replied 2h ago', avatar: 'https://i.pravatar.cc/150?img=5' },
-  { id: 'p3', name: 'College Buddy', desc: 'Chill • Study buddy • Night owl vibes', metaType: 'text', metaText: 'Replied yesterday', avatar: 'https://i.pravatar.cc/150?img=12' },
-];
+type PersonaItem = {
+  id: string;
+  name: string;
+  desc: string;
+  avatar: string;
+};
 
 export default function HomeScreen() {
   const { userName } = useAppSelector((s) => s.session);
@@ -27,7 +27,10 @@ export default function HomeScreen() {
 
   const displayName = userName || 'Daksh';
 
-  const renderPersonaCard = ({ item }: { item: typeof MY_PERSONAS[0] }) => (
+  // User-created personas — currently empty, will be fetched from backend when available
+  const myPersonas: PersonaItem[] = [];
+
+  const renderPersonaCard = ({ item }: { item: PersonaItem }) => (
     <TouchableOpacity
       style={styles.personaCard}
       onPress={() => navigation.navigate('Chat')}
@@ -40,14 +43,6 @@ export default function HomeScreen() {
       <View style={styles.cardMid}>
         <Text style={styles.cardName}>{item.name}</Text>
         <Text style={styles.cardDesc} numberOfLines={1}>{item.desc}</Text>
-        {item.metaType === 'badge' ? (
-          <View style={styles.cardBadge}>
-            <Feather name="bar-chart-2" size={10} color={Colors.primarySolid} style={{ marginRight: 4 }} />
-            <Text style={styles.cardBadgeText}>{item.metaText}</Text>
-          </View>
-        ) : (
-          <Text style={styles.cardMetaText}>{item.metaText}</Text>
-        )}
       </View>
       <TouchableOpacity
         onPress={(e) => {
@@ -113,18 +108,15 @@ export default function HomeScreen() {
           <View style={styles.sectionHeaderLeft}>
             <Text style={styles.sectionTitle}>Your Personas</Text>
             <View style={styles.countBadge}>
-              <Text style={styles.countBadgeText}>{MY_PERSONAS.length}</Text>
+              <Text style={styles.countBadgeText}>{myPersonas.length}</Text>
             </View>
           </View>
-          <TouchableOpacity>
-            <Text style={styles.viewAllText}>View all <Feather name="chevron-right" size={14} /></Text>
-          </TouchableOpacity>
         </View>
 
         {/* PERSONAS LIST */}
         <View style={styles.personasContainer}>
-          {MY_PERSONAS.length > 0 ? (
-            MY_PERSONAS.map((item) => (
+          {myPersonas.length > 0 ? (
+            myPersonas.map((item) => (
               <View key={item.id}>{renderPersonaCard({ item })}</View>
             ))
           ) : (
@@ -134,7 +126,7 @@ export default function HomeScreen() {
               </View>
               <Text style={styles.emptyTitle}>No Personas Yet</Text>
               <Text style={styles.emptySub}>
-                You haven't created any personas. Tap the '+' button below to train your first AI clone!
+                Create your first persona to let your AI clone chat on your behalf! Tap the '+' button below to get started.
               </Text>
             </View>
           )}
