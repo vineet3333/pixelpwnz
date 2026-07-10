@@ -12,11 +12,17 @@ function countEmojis(text) {
 
 function parseTimestamp(dateStr, timeStr) {
   const [day, month, year] = dateStr.split('/').map(Number);
-  const [hms, meridiem] = timeStr.split(' ');
-  const [hoursStr, minutesStr, secondsStr] = hms.split(':');
-  let hours = parseInt(hoursStr, 10);
-  const minutes = parseInt(minutesStr, 10);
-  const seconds = parseInt(secondsStr, 10);
+  
+  // Replace narrow no-break space (\u202F) or standard space with a normal space
+  const normalizedTime = timeStr.replace(/\u202F/g, ' ').trim();
+  const parts = normalizedTime.split(' ');
+  const hms = parts[0];
+  const meridiem = parts[1];
+
+  const hmsParts = hms.split(':');
+  let hours = parseInt(hmsParts[0], 10) || 0;
+  const minutes = parseInt(hmsParts[1], 10) || 0;
+  const seconds = parseInt(hmsParts[2], 10) || 0;
 
   if (meridiem?.toUpperCase() === 'PM' && hours !== 12) hours += 12;
   if (meridiem?.toUpperCase() === 'AM' && hours === 12) hours = 0;

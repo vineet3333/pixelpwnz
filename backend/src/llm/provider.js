@@ -1,91 +1,7 @@
 import config from '../config.js';
 
-let openaiClient = null;
+// OpenAI implementation removed
 
-async function getOpenAI() {
-  if (!openaiClient) {
-    if (!config.openai.apiKey) {
-      const err = new Error('LLM Service unavailable: OPENAI_API_KEY not configured');
-      err.statusCode = 503;
-      throw err;
-    }
-    const { default: OpenAI } = await import('openai');
-    openaiClient = new OpenAI({ apiKey: config.openai.apiKey });
-  }
-  return openaiClient;
-}
-
-/**
- * Generate a reply using OpenAI.
- * @param {string} systemPrompt
- * @param {string} userPrompt
- * @param {number} temperature
- * @returns {Promise<{ reply: string, usage: object }>}
- */
-async function generateOpenAI(systemPrompt, userPrompt, temperature) {
-  let openai;
-  try {
-    openai = await getOpenAI();
-  } catch (err) {
-    err.statusCode = err.statusCode || 503;
-    throw err;
-  }
-
-  try {
-    const response = await openai.chat.completions.create({
-      model: config.openai.model,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      temperature,
-      max_tokens: 150,
-    });
-
-    return {
-      reply: response.choices[0]?.message?.content?.trim() || '',
-      usage: {
-        prompt_tokens: response.usage?.prompt_tokens || 0,
-        completion_tokens: response.usage?.completion_tokens || 0,
-        total_tokens: response.usage?.total_tokens || 0,
-      },
-    };
-  } catch (err) {
-    throw classifyOpenAIError(err);
-  }
-}
-
-/**
- * Classify OpenAI errors into proper HTTP status codes.
- */
-function classifyOpenAIError(err) {
-  if (err.status === 429) {
-    const e = new Error('Too many requests. Please wait a moment and try again.');
-    e.statusCode = 429;
-    return e;
-  }
-  if (err.status === 401 || err.status === 403) {
-    const e = new Error('LLM Service authentication failed');
-    e.statusCode = 503;
-    return e;
-  }
-  if (err.name === 'AbortError' || err.code === 'ETIMEDOUT' || err.code === 'ECONNRESET') {
-    const e = new Error('LLM request timed out. Please try again.');
-    e.statusCode = 504;
-    return e;
-  }
-  const e = new Error('LLM Service unavailable. Please try again later.');
-  e.statusCode = 503;
-  return e;
-}
-
-/**
- * Generate a reply using Ollama.
- * @param {string} systemPrompt
- * @param {string} userPrompt
- * @param {number} temperature
- * @returns {Promise<{ reply: string, usage: object }>}
- */
 async function generateOllama(systemPrompt, userPrompt, temperature) {
   try {
     const response = await fetch(`${config.ollama.baseUrl}/api/generate`, {
@@ -117,6 +33,7 @@ async function generateOllama(systemPrompt, userPrompt, temperature) {
 
     return {
       reply: (data.response || '').trim(),
+      provider: 'ollama',
       usage: {
         prompt_tokens: data.prompt_eval_count || 0,
         completion_tokens: data.eval_count || 0,
@@ -141,6 +58,48 @@ async function generateOllama(systemPrompt, userPrompt, temperature) {
   }
 }
 
+async function generateGroq(systemPrompt, userPrompt, temperature) {
+  const apiKey = config.groq?.apiKey;
+  if (!apiKey) throw new Error('GROQ_API_KEY not configured');
+
+  const model = config.groq?.model || 'llama-3.1-8b-instant';
+
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      temperature,
+      max_tokens: 150,
+    }),
+    signal: AbortSignal.timeout(10000),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Groq API error (${response.status}): ${text}`);
+  }
+
+  const data = await response.json();
+
+  return {
+    reply: data.choices?.[0]?.message?.content?.trim() || '',
+    provider: 'groq',
+    usage: {
+      prompt_tokens: data.usage?.prompt_tokens || 0,
+      completion_tokens: data.usage?.completion_tokens || 0,
+      total_tokens: data.usage?.total_tokens || 0,
+    },
+  };
+}
+
 /**
  * Rule-based fallback reply when LLM is completely unavailable.
  * PRD §3 Epic 3 — Fallback requirement.
@@ -155,30 +114,40 @@ function fallbackReply() {
 }
 
 /**
- * Generate a reply using the configured LLM provider.
- * Auto-detects: uses OpenAI if OPENAI_API_KEY is set, otherwise Ollama.
+ * Hybrid LLM provider — tries local Ollama first, falls back to Groq.
  * On catastrophic failure, falls back to a rule-based reply.
- *
+ * Priority: Ollama (free, local) → Groq (free, ultra-fast) → Fallback Text
+ * 
  * @param {string} systemPrompt
  * @param {string} userPrompt
  * @param {number} [temperature=0.7]
- * @returns {Promise<{ reply: string, usage: object, fallback: boolean }>}
+ * @returns {Promise<{ reply: string, provider: string, usage: object, fallback: boolean }>}
  */
 export async function generateReply(systemPrompt, userPrompt, temperature = 0.7) {
+  const errors = [];
+
+  // 1. Try Ollama (local, free, fastest)
   try {
-    if (config.openai.apiKey) {
-      return { ...(await generateOpenAI(systemPrompt, userPrompt, temperature)), fallback: false };
-    }
     return { ...(await generateOllama(systemPrompt, userPrompt, temperature)), fallback: false };
   } catch (err) {
-    if (err.statusCode === 429 || err.statusCode === 504 || err.statusCode === 503) {
-      throw err;
-    }
-    console.error('[LLM] Unexpected error, using fallback:', err.message);
-    return {
-      reply: fallbackReply(),
-      usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
-      fallback: true,
-    };
+    errors.push(`Ollama: ${err.message}`);
   }
+
+  // 2. Try Groq (cloud, free tier, ultra-fast)
+  if (config.groq?.apiKey) {
+    try {
+      return { ...(await generateGroq(systemPrompt, userPrompt, temperature)), fallback: false };
+    } catch (err) {
+      errors.push(`Groq: ${err.message}`);
+    }
+  }
+
+  // 3. Complete failure - use Rule-based Fallback
+  console.error('[LLM] All providers failed, using rule-based fallback.\nErrors:', errors.join('\n'));
+  return {
+    reply: fallbackReply(),
+    provider: 'fallback',
+    usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+    fallback: true,
+  };
 }
