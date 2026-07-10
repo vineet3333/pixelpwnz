@@ -120,9 +120,9 @@ export default function LandingScreen({ navigation }: Props) {
             maskElement={<Text style={styles.titleMask}>Personal Clone</Text>}
           >
             <LinearGradient
-              colors={['#7E6CFF', '#9155FF']}
+              colors={['#8B7CF7', '#6C5CE7']}
               start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
+              end={{ x: 1, y: 0 }}
               style={StyleSheet.absoluteFill}
             />
           </MaskedView>
@@ -229,7 +229,7 @@ export default function LandingScreen({ navigation }: Props) {
           </View>
 
           <TouchableOpacity style={styles.btnOutline} activeOpacity={0.7} onPress={handleGuestLogin}>
-            <FontAwesome5 name="google" size={18} color="#EA4335" />
+            <FontAwesome5 name="google" size={18} color="#000" />
             <Text style={styles.btnOutlineText}>Continue with Google</Text>
           </TouchableOpacity>
 
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flexGrow: 1,
-    paddingTop: Spacing.xl,
+    paddingTop: 60, // Added substantial top padding for notches
     paddingBottom: Spacing['4xl'],
     alignItems: 'center',
   },
