@@ -71,6 +71,67 @@ export function stopCleanup() {
 }
 
 /**
+ * Retrieve a session without expiry check (for internal use only).
+ * Does NOT check or update TTL.
+ */
+function getSessionRaw(sessionId) {
+  return sessions.get(sessionId) || null;
+}
+
+/**
+ * List all active (non-expired) sessions with summary info.
+ * Filters out expired sessions. Returns lightweight summaries without full pairs arrays.
+ * @returns {Array<{ session_id: string, contact_name: string, userName: string, label: string|null, created_at: number, pair_count: number, toneProfile: object }>}
+ */
+export function listSessions() {
+  const now = Date.now();
+  const results = [];
+
+  for (const [id, session] of sessions) {
+    const age = (now - session.created_at) / 1000;
+    if (age > config.session.ttl) {
+      sessions.delete(id);
+      continue;
+    }
+
+    results.push({
+      session_id: id,
+      contact_name: session.contact_name || '',
+      userName: session.userName || '',
+      label: session.label || null,
+      created_at: session.created_at,
+      pair_count: session.pairs ? session.pairs.length : 0,
+      toneProfile: session.toneProfile || null,
+    });
+  }
+
+  // Sort newest first
+  results.sort((a, b) => b.created_at - a.created_at);
+  return results;
+}
+
+/**
+ * Partially update a session's metadata.
+ * Only allows updating specific safe fields.
+ * @param {string} sessionId
+ * @param {object} updates - Fields to update (e.g., { label: "Work Chat" })
+ * @returns {object|null} The updated session object, or null if not found
+ */
+export function updateSession(sessionId, updates) {
+  const session = getSessionRaw(sessionId);
+  if (!session) return null;
+
+  const allowedFields = ['label', 'temperature'];
+  for (const field of allowedFields) {
+    if (updates[field] !== undefined) {
+      session[field] = updates[field];
+    }
+  }
+
+  return session;
+}
+
+/**
  * Clear all sessions (for tests).
  */
 export function clearAll() {

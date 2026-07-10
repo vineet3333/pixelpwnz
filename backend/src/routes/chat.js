@@ -9,7 +9,7 @@ router.post('/', async (req, res, next) => {
   const startTime = Date.now();
 
   try {
-    const { session_id, incoming_message, temperature } = req.body;
+    const { session_id, incoming_message, message, temperature } = req.body;
 
     if (!session_id) {
       const err = new Error('Missing session_id');
@@ -17,7 +17,9 @@ router.post('/', async (req, res, next) => {
       throw err;
     }
 
-    if (!incoming_message || !incoming_message.trim()) {
+    // Accept either 'incoming_message' or 'message' (for mobile compatibility)
+    const finalMessage = incoming_message || message;
+    if (!finalMessage || !finalMessage.trim()) {
       const err = new Error('Missing incoming_message');
       err.statusCode = 400;
       throw err;
@@ -36,7 +38,7 @@ router.post('/', async (req, res, next) => {
       examples,
     } = await buildRAGPrompt(
       session_id,
-      incoming_message,
+      finalMessage,
       session.userName,
       session.pairs
     );

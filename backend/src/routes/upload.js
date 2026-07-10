@@ -44,8 +44,10 @@ router.post('/', upload.single('chatFile'), async (req, res, next) => {
     res.status(200).json({
       success: true,
       session_id: sessionId,
+      user_name: userName,
       contact_name: contactName,
       total_pairs_extracted: pairs.length,
+      pair_count: pairs.length,
       total_messages_parsed: totalMessagesParsed,
       estimated_generation_time_ms: Math.round(pairs.length * 3.5),
     });

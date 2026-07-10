@@ -11,6 +11,8 @@ import chatRoutes from './routes/chat.js';
 import statsRoutes from './routes/stats.js';
 import sessionRoutes from './routes/session.js';
 import personaRoutes from './routes/persona.js';
+import sessionsRoutes from './routes/sessions.js';
+import configRoutes from './routes/config.js';
 import { startCleanup } from './store/sessionStore.js';
 import { cleanupOrphanedCollections } from './brain/chromaClient.js';
 
@@ -36,6 +38,8 @@ app.use('/api/chat', chatLimiter, chatRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/session', sessionRoutes);
 app.use('/api/persona', personaRoutes);
+app.use('/api/sessions', sessionsRoutes);
+app.use('/api/config', configRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

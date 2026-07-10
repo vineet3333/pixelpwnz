@@ -1,11 +1,33 @@
-import { describe, it, expect, beforeEach, afterAll } from 'vitest';
+import { describe, it, expect, beforeEach, afterAll, vi } from 'vitest';
 import request from 'supertest';
+
+// Mock the brain module so we don't need ChromaDB/LLM for pipeline tests
+vi.mock('../src/brain/index.js', () => ({
+  buildRAGPrompt: vi.fn().mockResolvedValue({
+    systemPrompt: 'system prompt',
+    userPrompt: 'user prompt',
+    examples: [],
+    latencyMs: 0,
+  }),
+}));
+
+// Mock the LLM provider to return a controlled response
+vi.mock('../src/llm/provider.js', () => ({
+  generateReply: vi.fn().mockResolvedValue({
+    reply: 'Mocked clone reply',
+    usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+    fallback: false,
+  }),
+}));
+
 import app from '../src/index.js';
 import { createSession, getSession, clearAll, stopCleanup } from '../src/store/sessionStore.js';
-
+import { buildRAGPrompt } from '../src/brain/index.js';
+import { generateReply } from '../src/llm/provider.js';
 describe('POST /api/chat', () => {
   beforeEach(() => {
     clearAll();
+    vi.clearAllMocks();
     createSession('test-session-1', {
       contact_name: 'Rishab',
       userName: 'Vineet',
@@ -43,6 +65,94 @@ describe('POST /api/chat', () => {
 
     expect(res.status).toBe(404);
     expect(res.body.error).toContain('not found');
+  });
+
+  it('accepts message field as alias for incoming_message', async () => {
+    const res = await request(app)
+      .post('/api/chat')
+      .send({ session_id: 'test-session-1', message: 'Hello via alias' });
+
+    // Should not be 400 — means it accepted the 'message' field
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.reply).toBe('Mocked clone reply');
+  });
+
+  it('accepts incoming_message field (backward compatibility)', async () => {
+    const res = await request(app)
+      .post('/api/chat')
+      .send({ session_id: 'test-session-1', incoming_message: 'Hello standard' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+  });
+
+  it('prefers incoming_message over message when both are provided', async () => {
+    const res = await request(app)
+      .post('/api/chat')
+      .send({
+        session_id: 'test-session-1',
+        incoming_message: 'Primary message',
+        message: 'Alias message',
+      });
+
+    expect(res.status).toBe(200);
+
+    // buildRAGPrompt should be called with 'Primary message' (not 'Alias message')
+    const mockBuildRAGPrompt = vi.mocked(buildRAGPrompt);
+    expect(mockBuildRAGPrompt).toHaveBeenCalledWith(
+      'test-session-1',
+      'Primary message',
+      'Vineet',
+      expect.any(Object),
+    );
+  });
+
+  it('calls buildRAGPrompt and generateReply with correct parameters', async () => {
+    const res = await request(app)
+      .post('/api/chat')
+      .send({ session_id: 'test-session-1', incoming_message: 'Test message', temperature: 0.5 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.reply).toBe('Mocked clone reply');
+    expect(res.body.used_examples).toBe(0);
+    expect(res.body.latency_ms).toBeGreaterThanOrEqual(0);
+    expect(res.body.token_usage).toBeDefined();
+
+    // Verify buildRAGPrompt was called correctly
+    const mockBuildRAGPrompt = vi.mocked(buildRAGPrompt);
+    expect(mockBuildRAGPrompt).toHaveBeenCalledWith(
+      'test-session-1',
+      'Test message',
+      'Vineet',
+      expect.any(Object),
+    );
+
+    // Verify generateReply was called with the mocked prompt outputs
+    const mockGenerateReply = vi.mocked(generateReply);
+    expect(mockGenerateReply).toHaveBeenCalledWith(
+      'system prompt',
+      'user prompt',
+      0.5,
+    );
+  });
+
+  it('includes fallback flag when generateReply uses fallback', async () => {
+    // Override the mock for this test
+    vi.mocked(generateReply).mockResolvedValueOnce({
+      reply: 'Fallback reply',
+      usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+      fallback: true,
+    });
+
+    const res = await request(app)
+      .post('/api/chat')
+      .send({ session_id: 'test-session-1', incoming_message: 'Hello' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.fallback).toBe(true);
+    expect(res.body.reply).toBe('Fallback reply');
   });
 });
 
