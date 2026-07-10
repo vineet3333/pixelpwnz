@@ -7,12 +7,15 @@ import MaskedView from '@react-native-masked-view/masked-view';
 import { Colors, Spacing, Typography, Radii, Gradients } from '../constants/theme';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
+import { useAppDispatch } from '../store/hooks';
+import { setIsLoggedIn } from '../store/sessionSlice';
 
 const { width } = Dimensions.get('window');
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Landing'>;
 
 export default function LandingScreen({ navigation }: Props) {
+  const dispatch = useAppDispatch();
   const floatAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -137,18 +140,19 @@ export default function LandingScreen({ navigation }: Props) {
             <TouchableOpacity
               style={styles.btnPrimary}
               activeOpacity={0.8}
-              onPress={() => navigation.navigate('Upload')}
+              onPress={() => dispatch(setIsLoggedIn(true))}
             >
-              <Feather name="upload" size={18} color="#FFF" />
-              <Text style={styles.btnPrimaryText}>Upload Your Chat</Text>
+              <Feather name="log-in" size={18} color="#FFF" />
+              <Text style={styles.btnPrimaryText}>Login / Register</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.btnGhost}
               activeOpacity={0.8}
+              onPress={() => dispatch(setIsLoggedIn(true))}
             >
-              <Feather name="play" size={16} color={Colors.primarySolid} />
-              <Text style={styles.btnGhostText}>Watch Demo</Text>
+              <Feather name="user" size={16} color={Colors.primarySolid} />
+              <Text style={styles.btnGhostText}>Continue as Guest</Text>
             </TouchableOpacity>
           </View>
 
