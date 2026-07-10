@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, TextInput, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, TextInput, ScrollView, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radii } from '../constants/theme';
@@ -9,77 +9,106 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
+const CATEGORIES = ['Explore', 'Trending', 'Celebrities', 'Anime', 'Historical', 'Sports', 'Fictional'];
+
 const MOCK_PERSONAS = [
-  { id: '1', title: 'Elon Musk', sub: 'CEO of Tesla, SpaceX', author: '@techvisionary', interactions: '4.2m', image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&q=80' },
-  { id: '2', title: 'Naruto Uzumaki', sub: 'Believe it! Ninja of the Leaf', author: '@animefan99', interactions: '8.5m', image: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&q=80' },
-  { id: '3', title: 'Iron Man', sub: 'Genius, billionaire, playboy...', author: '@starkindustries', interactions: '6.1m', image: 'https://images.unsplash.com/photo-1634828221818-503587f19d4d?w=400&q=80' },
-  { id: '4', title: 'Cristiano Ronaldo', sub: 'Siuuuu! Legend of football.', author: '@cr7fanclub', interactions: '12.6m', image: 'https://images.unsplash.com/photo-1508344928928-7157b87de1ce?w=400&q=80' },
+  { id: '1', title: 'Elon Musk', sub: 'CEO of Tesla & SpaceX. Let\'s talk Mars.', author: '@signet', interactions: '4.2m', image: 'https://i.pravatar.cc/400?img=68' },
+  { id: '2', title: 'Naruto Uzumaki', sub: 'Believe it! Future Hokage of the Leaf.', author: '@signet', interactions: '8.5m', image: 'https://i.pravatar.cc/400?img=33' },
+  { id: '3', title: 'Iron Man', sub: 'Genius, billionaire, philanthropist.', author: '@signet', interactions: '6.1m', image: 'https://i.pravatar.cc/400?img=51' },
+  { id: '4', title: 'Cristiano Ronaldo', sub: 'SIUUUU! Legend of football.', author: '@signet', interactions: '12.6m', image: 'https://i.pravatar.cc/400?img=59' },
+  { id: '5', title: 'Albert Einstein', sub: 'Let me explain relativity simply.', author: '@signet', interactions: '3.8m', image: 'https://i.pravatar.cc/400?img=60' },
+  { id: '6', title: 'Sherlock Holmes', sub: 'The game is afoot, Watson.', author: '@signet', interactions: '5.2m', image: 'https://i.pravatar.cc/400?img=14' },
+  { id: '7', title: 'Cleopatra', sub: 'Queen of Egypt. Ruler of Nile.', author: '@signet', interactions: '2.1m', image: 'https://i.pravatar.cc/400?img=47' },
+  { id: '8', title: 'Goku', sub: 'Always ready for a fight!', author: '@signet', interactions: '9.7m', image: 'https://i.pravatar.cc/400?img=52' },
 ];
+
+const { width } = Dimensions.get('window');
+const CARD_WIDTH = (width - Spacing.lg * 2 - 12) / 2;
 
 export default function DiscoverScreen() {
   const [activeTab, setActiveTab] = useState('Explore');
+  const [searchQuery, setSearchQuery] = useState('');
   const navigation = useNavigation<NavigationProp>();
+
+  const filteredPersonas = searchQuery.trim()
+    ? MOCK_PERSONAS.filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase()))
+    : MOCK_PERSONAS;
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Header & Search */}
+      {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <Text style={styles.headerLogo}>(c.ai)</Text>
+          <Text style={styles.headerLogo}>Explore</Text>
           <View style={styles.headerRight}>
-            <View style={styles.premiumBadge}>
-              <Text style={styles.premiumText}>Get (c.ai+)</Text>
-            </View>
-            <Feather name="plus-square" size={24} color={Colors.text} style={{ marginHorizontal: 16 }} />
-            <Feather name="bell" size={24} color={Colors.text} />
+            <TouchableOpacity style={styles.headerIconBtn}>
+              <Feather name="bell" size={22} color={Colors.text} />
+            </TouchableOpacity>
           </View>
         </View>
+
+        {/* Search */}
         <View style={styles.searchBar}>
-          <Feather name="search" size={20} color={Colors.textMuted} />
-          <TextInput 
+          <Feather name="search" size={18} color={Colors.textMuted} />
+          <TextInput
             style={styles.searchInput}
-            placeholder="Search characters"
+            placeholder="Search public personas..."
             placeholderTextColor={Colors.textMuted}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
           />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Feather name="x" size={18} color={Colors.textMuted} />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
-      {/* Pills */}
-      <View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pillsContainer}>
-          {['For You', 'Following', 'Trending', 'Scenarios'].map((tab) => (
-            <TouchableOpacity 
-              key={tab}
-              style={[styles.pill, activeTab === tab && styles.pillActive]}
-              onPress={() => setActiveTab(tab)}
-            >
-              <Text style={[styles.pillText, activeTab === tab && styles.pillTextActive]}>
-                {tab}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
+      {/* Category pills */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pillsContainer}>
+        {CATEGORIES.map((tab) => (
+          <TouchableOpacity
+            key={tab}
+            style={[styles.pill, activeTab === tab && styles.pillActive]}
+            onPress={() => setActiveTab(tab)}
+          >
+            <Text style={[styles.pillText, activeTab === tab && styles.pillTextActive]}>
+              {tab}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
 
       {/* Grid */}
       <FlatList
-        data={MOCK_PERSONAS}
+        data={filteredPersonas}
         keyExtractor={item => item.id}
         numColumns={2}
         contentContainerStyle={styles.listContent}
         columnWrapperStyle={styles.columnWrapper}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={() => (
+          <View style={styles.emptyState}>
+            <Feather name="search" size={32} color={Colors.textMuted} />
+            <Text style={styles.emptyText}>No personas found for "{searchQuery}"</Text>
+          </View>
+        )}
         renderItem={({ item }) => (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.card}
             onPress={() => navigation.navigate('Chat')}
+            activeOpacity={0.8}
           >
             <Image source={{ uri: item.image }} style={styles.cardImage} />
             <View style={styles.cardInfo}>
               <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
               <Text style={styles.cardSub} numberOfLines={2}>{item.sub}</Text>
               <View style={styles.cardFooter}>
-                <Feather name="message-square" size={12} color={Colors.textMuted} />
-                <Text style={styles.cardInteractions}>{item.interactions}</Text>
+                <View style={styles.interactionRow}>
+                  <Feather name="message-circle" size={11} color={Colors.textMuted} />
+                  <Text style={styles.cardInteractions}>{item.interactions}</Text>
+                </View>
                 <Text style={styles.cardAuthor} numberOfLines={1}>{item.author}</Text>
               </View>
             </View>
@@ -92,10 +121,12 @@ export default function DiscoverScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: Colors.bg },
+
+  /* Header */
   header: {
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
-    paddingBottom: Spacing.sm,
+    paddingBottom: Spacing.xs,
   },
   headerTop: {
     flexDirection: 'row',
@@ -104,40 +135,40 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   headerLogo: {
-    ...Typography.h2,
+    fontSize: 26,
+    fontWeight: '800',
     color: Colors.text,
+    letterSpacing: -0.5,
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  premiumBadge: {
-    backgroundColor: Colors.primarySolid,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  premiumText: {
-    color: '#FFF',
-    fontSize: 12,
-    fontWeight: 'bold',
+  headerIconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.glass.bg,
-    borderRadius: 20,
-    paddingHorizontal: Spacing.md,
-    height: 40,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    height: 42,
     borderWidth: 1,
     borderColor: Colors.border,
   },
   searchInput: {
     flex: 1,
-    marginLeft: 8,
+    marginLeft: 10,
     color: Colors.text,
-    fontSize: 16,
+    fontSize: 15,
   },
+
+  /* Pills */
   pillsContainer: {
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.sm,
@@ -155,59 +186,81 @@ const styles = StyleSheet.create({
     borderColor: Colors.text,
   },
   pillText: {
-    ...Typography.body,
+    fontSize: 13,
     color: Colors.textMuted,
+    fontWeight: '600',
   },
   pillTextActive: {
     color: Colors.bg,
     fontWeight: 'bold',
   },
+
+  /* Grid */
   listContent: {
-    padding: Spacing.lg,
-    paddingBottom: 100, // Space for bottom tab bar
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: 100,
+    paddingTop: 4,
   },
   columnWrapper: {
     justifyContent: 'space-between',
   },
   card: {
-    width: '48%',
+    width: CARD_WIDTH,
     marginBottom: Spacing.lg,
     borderRadius: Radii.lg,
-    backgroundColor: Colors.bg,
+    backgroundColor: Colors.glass.bg,
+    borderWidth: 1,
+    borderColor: Colors.border,
     overflow: 'hidden',
   },
   cardImage: {
     width: '100%',
-    height: 180,
-    borderRadius: Radii.lg,
+    height: 160,
   },
   cardInfo: {
-    paddingTop: 8,
+    padding: 10,
   },
   cardTitle: {
-    ...Typography.body,
+    fontSize: 14,
     fontWeight: 'bold',
     color: Colors.text,
-    marginBottom: 4,
+    marginBottom: 3,
   },
   cardSub: {
-    fontSize: 13,
+    fontSize: 12,
     color: Colors.textMuted,
-    marginBottom: 6,
+    marginBottom: 8,
+    lineHeight: 16,
   },
   cardFooter: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  interactionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
   },
   cardInteractions: {
     fontSize: 11,
     color: Colors.textMuted,
-    marginLeft: 4,
-    marginRight: 8,
   },
   cardAuthor: {
     fontSize: 11,
+    color: Colors.primarySolid,
+    fontWeight: '600',
+  },
+
+  /* Empty */
+  emptyState: {
+    alignItems: 'center',
+    paddingTop: 80,
+    gap: 12,
+  },
+  emptyText: {
+    ...Typography.body,
     color: Colors.textMuted,
-    flex: 1,
+    textAlign: 'center',
   },
 });
