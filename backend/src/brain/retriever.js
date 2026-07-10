@@ -1,5 +1,6 @@
 import { embed } from './embedder.js';
 import { queryVectors } from './chromaClient.js';
+import { rerank } from './reranker.js';
 
 /**
  * Keyword score: how many words from `query` appear in `document` (normalized).
@@ -26,19 +27,20 @@ function keywordScore(query, document) {
 }
 
 /**
- * Semantic Retriever — hybrid search (dense + keyword).
+ * Semantic Retriever — hybrid search (dense + keyword) + Cross-Encoder reranking.
  *
  * 1. Embed the incoming message.
  * 2. Query ChromaDB for top-k candidates (dense).
- * 3. Re-rank with a weighted hybrid score.
- * 4. Return the top-5 (context, reply) pairs.
+ * 3. Pre-score with a weighted hybrid score.
+ * 4. Rerank the candidates using a Cross-Encoder.
+ * 5. Return the top-5 (context, reply) pairs.
  *
  * @param {string} sessionId
  * @param {string} incomingMessage
  * @param {{ topK?: number, alpha?: number }} options
  *   - topK: number of final results (default 5)
  *   - alpha: weight for semantic score [0–1] (default 0.7)
- * @returns {Promise<{ incoming: string, reply: string, score: number }[]>}
+ * @returns {Promise<{ incoming: string, reply: string, score: number, rerankScore: number }[]>}
  */
 export async function retrieve(sessionId, incomingMessage, { topK = 5, alpha = 0.7 } = {}) {
   // Fetch more candidates than needed to allow re-ranking
@@ -65,7 +67,8 @@ export async function retrieve(sessionId, incomingMessage, { topK = 5, alpha = 0
     };
   });
 
-  // Sort descending by hybrid score and take top-k
-  scored.sort((a, b) => b.score - a.score);
-  return scored.slice(0, topK);
+  // Cross-Encoder reranking
+  const reranked = await rerank(incomingMessage, scored);
+  
+  return reranked.slice(0, topK);
 }
