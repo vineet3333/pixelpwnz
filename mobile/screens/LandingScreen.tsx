@@ -9,13 +9,13 @@ import MaskedView from '@react-native-masked-view/masked-view';
 import * as Haptics from 'expo-haptics';
 import { Colors, Spacing, Typography, Radii } from '../constants/theme';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../navigation/AppNavigator';
+import type { AuthStackParamList } from '../navigation/AuthNavigator';
 import { useAppDispatch } from '../store/hooks';
 import { setIsLoggedIn } from '../store/sessionSlice';
 
 const { width } = Dimensions.get('window');
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Landing'>;
+type Props = NativeStackScreenProps<AuthStackParamList, 'Landing'>;
 
 export default function LandingScreen({ navigation }: Props) {
   const dispatch = useAppDispatch();
