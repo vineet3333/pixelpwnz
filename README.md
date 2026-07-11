@@ -149,6 +149,29 @@ The project spans **three platforms**:
 └─────────────────────────────────────────────────────┘
 ```
 
+### Mermaid Diagram
+
+```mermaid
+graph TD
+    A[WhatsApp Chat Export .txt] -->|Upload| B(Express Backend Parser)
+    B -->|Extract Msg Pairs| C(Xenova Local Embedder)
+    C -->|Vector Embeddings| D[(ChromaDB Vector Store)]
+    B -->|Tone Statistics| E[(MongoDB Session Metadata)]
+
+    F[Incoming WhatsApp Message] -->|whatsapp-web.js Listener| G{Is Whitelisted?}
+    G -->|No| H[Ignore / Idle]
+    G -->|Yes| I{User Replies in X seconds?}
+    I -->|Yes| J[Cancel Auto-Pilot]
+    I -->|No| K[Embed Incoming Message]
+
+    K -->|Semantic Query| D
+    D -->|Retrieve Top Pairs| L(Prompt Builder)
+    E -->|Fetch Tone profile| L
+    L -->|Compiled Prompt| M[LLM Engine: Groq/Ollama]
+    M -->|Generated Reply| N[whatsapp-web.js Client]
+    N -->|Auto-send Msg| O[Friend's Phone]
+```
+
 ### Data Flow
 
 1. **Upload** → User uploads a WhatsApp `.txt` export → parser extracts conversation pairs (incoming + reply) → each pair is embedded via HuggingFace Transformers → vectors stored in ChromaDB → tone profile computed → session created in MongoDB.
