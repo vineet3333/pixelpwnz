@@ -624,19 +624,19 @@ Health check endpoint.
 
 | Method | Endpoint | Auth | Purpose |
 |--------|----------|------|---------|
-| `POST` | `/api/auth/register` | ❌ | Create account |
-| `POST` | `/api/auth/login` | ❌ | Sign in |
-| `GET` | `/api/auth/me` | ✅ | Current user |
-| `POST` | `/api/upload` | ✅ | Upload chat export |
-| `POST` | `/api/chat` | ✅ | Chat with clone |
-| `GET` | `/api/session/:id` | ✅ | Session details |
-| `DELETE` | `/api/session/:id` | ✅ | Delete session |
-| `GET` | `/api/sessions` | ✅ | List sessions |
-| `GET` | `/api/stats/:id` | ✅ | Session analytics |
-| `GET` | `/api/persona/bookmarks` | ✅ | Bookmarked personas |
-| `POST` | `/api/persona/:id/bookmark` | ✅ | Toggle bookmark |
-| `GET` | `/api/config` | ❌ | Public config |
-| `GET` | `/api/health` | ❌ | Health check |
+| `POST` | `/api/auth/register` | No | Create account |
+| `POST` | `/api/auth/login` | No | Sign in |
+| `GET` | `/api/auth/me` | Yes | Current user |
+| `POST` | `/api/upload` | Yes | Upload chat export |
+| `POST` | `/api/chat` | Yes | Chat with clone |
+| `GET` | `/api/session/:id` | Yes | Session details |
+| `DELETE` | `/api/session/:id` | Yes | Delete session |
+| `GET` | `/api/sessions` | Yes | List sessions |
+| `GET` | `/api/stats/:id` | Yes | Session analytics |
+| `GET` | `/api/persona/bookmarks` | Yes | Bookmarked personas |
+| `POST` | `/api/persona/:id/bookmark` | Yes | Toggle bookmark |
+| `GET` | `/api/config` | No | Public config |
+| `GET` | `/api/health` | No | Health check |
 
 See the [full API documentation](https://signet-web.vercel.app/docs) for detailed request/response schemas.
 
@@ -813,6 +813,6 @@ Tests run automatically on push via the CI pipeline. The pipeline:
 
 <br />
 
-**Built for [HackSprint 2k26](https://hackathon.url)** &nbsp;·&nbsp; Made with ❤️ by [PixelPwnz](https://github.com/pixelpwnz)
+**Built for [HackSprint 2k26](https://hackathon.url)** &nbsp;·&nbsp; Made by [PixelPwnz](https://github.com/pixelpwnz)
 
 </div>
