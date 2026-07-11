@@ -1,370 +1,536 @@
-# 🌌 Signet — Your Personal AI Clone Proxy
+<div align="center">
 
-> **HackSprint 2k26 Hackathon Project**
-> 
-> Never leave a friend on read. Extract your unique tone, vocabulary, and personality from chat exports to build a secure personal AI proxy that responds on WhatsApp on your behalf.
+<br />
 
----
+<img src="web/public/logo.png" width="72" height="72" alt="Signet logo" />
 
-## 📋 Table of Contents
-1. [Problem Statement](#-problem-statement)
-2. [Our Approach](#-our-approach)
-3. [Algorithmic Tone Profiling](#-algorithmic-tone-profiling)
-4. [RAG vector Pipeline](#-rag-vector-pipeline)
-5. [Architecture & Data Flow](#-architecture--data-flow)
-6. [Mermaid Diagram](#-mermaid-diagram)
-7. [Tech Stack](#-tech-stack)
-8. [Codebase Directory Structure](#-codebase-directory-structure)
-9. [Super Detailed API Documentation](#-super-detailed-api-documentation)
-10. [WhatsApp Integration (Auto-Pilot)](#-whatsapp-integration-auto-pilot)
-11. [Mobile App Overview (Expo 54)](#-mobile-app-overview-expo-54)
-12. [Setup & Installation](#-setup--installation)
-13. [Deployment Guidelines](#-deployment-guidelines)
-14. [Dev Team & Contributions](#-dev-team--contributions)
+# Signet
+
+**Your Personal AI Clone. Written in your hand.**
+
+Upload a chat export — Signet learns exactly how you talk. It analyzes your tone,
+phrase length, vocabulary, and emoji habits to create an authentic replica of your
+texting style.
+
+[Web App](https://signet-web.vercel.app) ·
+[Mobile (Expo)]() ·
+[API Docs](#api) ·
+[Docs](https://signet-web.vercel.app/docs)
+
+<br />
 
 ---
 
-## 🔍 Problem Statement
-Modern communication is constant and overwhelming. When driving, attending meetings, sleeping, or working, we often leave people "on read," leading to missed opportunities or social friction. Traditional autoreply bots are robotic, rigid, and impersonal, which immediately kills conversational flow. 
+<br />
 
-**Signet** bridges this gap by extracting your personal conversational patterns to build an AI clone that talks, thinks, and responds exactly like you.
+</div>
 
----
+## Overview
 
-## 💡 Our Approach
-Rather than relying on generic system instructions, Signet implements a specialized **RAG (Retrieval-Augmented Generation)** strategy:
-1. **Dynamic Tone Profiling**: Analyzes chat logs to extract emoji frequency, capitalization behaviors, punctuation habits, average sentence lengths, and common slang.
-2. **Semantic Few-Shot Injecting**: When an incoming message is received, we query a vector database for the top 3-5 most similar historical messages you sent. These are injected into the prompt as direct contextual examples.
-3. **Local Embedding Generation**: Offloads embedding generation locally on the server using `Xenova/all-MiniLM-L6-v2` for low-latency similarity queries.
+Signet is a full-stack AI cloning platform. Feed it a WhatsApp chat export (or any
+messaging history), and it builds a **vector embedding** of your communication style.
+You can then chat with your AI clone, tune its creativity, explore public personas,
+and dive into conversation analytics — all wrapped in a glassmorphism-designed UI.
 
----
+The project spans **three platforms**:
 
-## 🧮 Algorithmic Tone Profiling
-To clone a human personality, the system performs a quantitative analysis on the parsed message-reply pairs. The metrics extracted include:
+| Platform | Stack | Location |
+|----------|-------|----------|
+| **Web App** | React 19, Vite 8, Tailwind v4 | [`web/`](web/) |
+| **Mobile App** | Expo 54, React Native 0.81, Redux | [`mobile/`](mobile/) |
+| **Backend API** | Express, MongoDB, ChromaDB, Ollama / OpenAI | [`backend/`](backend/) |
 
-* **Average Reply Length**: Calculated as the sum of words in all user replies divided by the total number of conversation pairs:
-  $$\text{AvgLength} = \frac{\sum_{i=1}^{N} \text{WordCount}(\text{Reply}_i)}{N}$$
-* **Emoji Frequency**: The ratio of user replies containing at least one emoji to the total number of replies:
-  $$\text{EmojiFreq} = \frac{\sum_{i=1}^{N} [\text{Reply}_i \text{ contains emoji}]}{N}$$
-* **Capitalization Ratio**: Evaluates how often the user starts their sentences with a capital letter. A ratio $< 0.4$ indicates a casual lowercase typing style, while $> 0.7$ indicates a formal style.
-* **Punctuation Profiles**: Tracks the presence of ellipses (`...`), multiple exclamation marks (`!!`), and trailing question marks (`?`) in replies.
+## Features
 
----
+### Core AI
 
-## 🗄️ RAG Vector Pipeline
-When a chat `.txt` file is uploaded:
-1. **Chunking & Parsing**: Messages are parsed into logical blocks based on timezone-specific timestamp headers.
-2. **Batch Embedding**: The backend runs the `Xenova/all-MiniLM-L6-v2` model in a single-threaded WASM pipeline to generate 384-dimensional vector embeddings for all incoming messages.
-3. **ChromaDB Storage**: Pairs are saved as documents where:
-   - **Document Body**: The User's reply.
-   - **Embedding Vector**: The vector generated from the Friend's incoming message.
-   - **Metadata**: Stores the context (`session_id`, `contact_name`, `timestamp`, `emoji_count`, etc.) to support exact filtering.
+- **Chat Upload** — Upload `.txt` WhatsApp exports; the parser extracts conversation pairs with timestamps, contacts, emoji counts, and word counts.
+- **RAG-Powered AI Clone** — Retrieval-augmented generation combines ChromaDB vector search with your tone profile to produce replies that sound like you.
+- **Persona Library** — Chat with predefined personas (Steve Jobs, Naruto, Einstein, and more) or explore community-created clones.
+- **Continuous Learning** — Every chat with your clone adds new pairs back into the vector database, making it smarter over time.
+- **Temperature Control** — Tune the creativity slider from precise (low temp) to wild (high temp).
+- **Deep Analytics** — View stats on your conversation patterns, message length distribution, emoji usage, and response times.
+- **WhatsApp Integration** — Real-time WhatsApp Web client integration for seamless chat import and interaction.
 
----
+### Platform-Specific
 
-## ⚙️ Architecture & Data Flow
+| Platform | Highlights |
+|----------|-----------|
+| **Web** | Glassmorphism UI · Light/dark theme · Responsive design · Interactive demo · Privacy-first design |
+| **Mobile** | Native Expo app · Bottom-tab navigation · Offline mode · Biometric auth · Redux Persist state management |
+| **Backend** | RESTful API · JWT auth · Rate limiting · Helmet security headers · Graceful fallbacks (in-memory MongoDB for dev, Ollama/OpenAI for LLM) |
+
+### Security & Privacy
+
+- **Helmet** HTTP security headers
+- **bcrypt** password hashing (12 rounds)
+- **JWT** authentication with configurable expiry
+- **Rate limiting** on upload and chat endpoints
+- **TTL-based session expiry** — sessions auto-clean after inactivity
+- Your chat data is never stored permanently after session expiry
+
+## Tech Stack
+
+### Backend (`backend/`)
+
+| Category | Technology |
+|----------|-----------|
+| Runtime | Node.js 24, Express 4 |
+| Database | MongoDB 7 with Mongoose, ChromaDB (vector store) |
+| Auth | JWT, bcryptjs |
+| LLM Providers | Ollama (local), OpenAI API, Groq |
+| Vector Search | ChromaDB with HuggingFace Transformers embeddings |
+| File Upload | Multer (multipart), Sharp (image processing) |
+| WhatsApp | whatsapp-web.js, Puppeteer, QR Code terminal |
+| Testing | Vitest, Supertest, mongodb-memory-server |
+| Infrastructure | Docker Compose (ChromaDB + MongoDB + Ollama) |
+| Package Manager | pnpm (workspace) |
+
+### Web Frontend (`web/`)
+
+| Category | Technology |
+|----------|-----------|
+| Framework | React 19 with Vite 8 |
+| Styling | Tailwind CSS v4, Glassmorphism design system |
+| State | Zustand |
+| Routing | React Router v7 |
+| HTTP | Axios |
+| UI Components | Lucide icons, react-dropzone, react-hot-toast, QR code |
+| Linting | Oxlint |
+| Deployment | Netlify |
+
+### Mobile (`mobile/`)
+
+| Category | Technology |
+|----------|-----------|
+| Framework | Expo 54, React Native 0.81 |
+| Navigation | React Navigation 7 (native stack + bottom tabs) |
+| State | Redux Toolkit + Redux Persist |
+| HTTP | Axios |
+| UI | Expo Blur, Linear Gradient, FlashList |
+| Build | EAS (development / preview / production profiles) |
+| Language | TypeScript |
+
+## Architecture
 
 ```
-[ Incoming Message on WhatsApp ]
-                │
-                ▼
-      [ Suffix Validation ] ───► (Drop if Group Chat)
-                │
-                ▼
-   [ Whitelist Contact Filter ] ──► (Drop if not selected in Dashboard)
-                │
-                ▼
-     [ Wait-Time Timeout ] ───► (Starts countdown; cancels if user replies manually)
-                │
-                ▼ (Timer Expires)
-   [ ChromaDB Vector Search ] ──► (Finds top 3-5 similar message-reply pairs)
-                │
-                ▼
-     [ Prompt Compilation ] ───► (Tone profile + semantic history + new message)
-                │
-                ▼
-      [ LLM Generation ] ──────► (Groq / Ollama generation in user's tone)
-                │
-                ▼
-[ Reply Sent back via WhatsApp ]
+┌─────────────────────────────────────────────────────┐
+│                    Web (Vite)                        │
+│   React 19 · Tailwind · Zustand · React Router      │
+│   └─→ api/client.ts ←── VITE_API_BASE_URL           │
+└──────────────────────┬──────────────────────────────┘
+                       │ HTTPS / REST
+┌──────────────────────▼──────────────────────────────┐
+│              Backend API (Express)                   │
+│   ┌──────────┐  ┌──────────┐  ┌──────────────────┐  │
+│   │  Routes   │  │  Brain   │  │  LLM Providers   │  │
+│   │  /upload  │  │  Embedder│  │  Ollama          │  │
+│   │  /chat    │  │  Retriever│ │  OpenAI          │  │
+│   │  /auth    │  │  Reranker│  │  Groq            │  │
+│   │  /session │  │  Prompts │  │                  │  │
+│   │  /persona │  │  Personas│  └──────────────────┘  │
+│   │  /whatsapp│  └────┬─────┘                         │
+│   └──────────┘         │                              │
+│        ┌───────────────┼──────────────┐               │
+│   ┌────▼─────┐  ┌──────▼──────┐  ┌───▼───────┐      │
+│   │  MongoDB  │  │  ChromaDB   │  │  Memory   │      │
+│   │ (Mongoose)│  │ (Vectors)   │  │  Cache    │      │
+│   └──────────┘  └─────────────┘  └───────────┘      │
+│        ┌──────────────────────────────────┐          │
+│        │  WhatsApp Web Client             │          │
+│        │  (whatsapp-web.js + Puppeteer)   │          │
+│        └──────────────────────────────────┘          │
+└──────────────────────┬──────────────────────────────┘
+                       │ HTTPS / REST
+┌──────────────────────▼──────────────────────────────┐
+│              Mobile (Expo)                           │
+│   React Native · Redux · React Navigation           │
+│   └─→ api/client.ts ←── EXPO_PUBLIC_API_URL         │
+└─────────────────────────────────────────────────────┘
 ```
 
----
+### Data Flow
 
-## 📊 Mermaid Diagram
+1. **Upload** → User uploads a WhatsApp `.txt` export → parser extracts conversation pairs (incoming + reply) → each pair is embedded via HuggingFace Transformers → vectors stored in ChromaDB → tone profile computed → session created in MongoDB.
+2. **Chat** → User sends message → retriever queries ChromaDB for similar conversation pairs → RAG pipeline builds a system prompt + user prompt with retrieved examples → LLM generates a reply in the user's style → new pair is added back to the vector store (continuous learning).
+3. **Personas** → Predefined persona pairs (Steve Jobs, Naruto, Einstein, etc.) are seeded at startup → users can browse, bookmark, and chat with them just like their own clones.
+4. **WhatsApp Live** → WhatsApp Web client connects via QR code → real-time message ingestion → continuous learning from live conversations.
 
-```mermaid
-graph TD
-    A[WhatsApp Chat Export .txt] -->|Upload| B(Express Backend Parser)
-    B -->|Extract Msg Pairs| C(Xenova Local Embedder)
-    C -->|Vector Embeddings| D[(ChromaDB Vector Store)]
-    B -->|Tone Statistics| E[(MongoDB Session Metadata)]
-    
-    F[Incoming WhatsApp Message] -->|whatsapp-web.js Listener| G{Is Whitelisted?}
-    G -->|No| H[Ignore / Idle]
-    G -->|Yes| I{User Replies in X seconds?}
-    I -->|Yes| J[Cancel Auto-Pilot]
-    I -->|No| K[Embed Incoming Message]
-    
-    K -->|Semantic Query| D
-    D -->|Retrieve Top Pairs| L(Prompt Builder)
-    E -->|Fetch Tone profile| L
-    L -->|Compiled Prompt| M[LLM Engine: Groq/Ollama]
-    M -->|Generated Reply| N[whatsapp-web.js Client]
-    N -->|Auto-send Msg| O[Friend's Phone]
+## Getting Started
+
+### Prerequisites
+
+- **Node.js** >= 22
+- **pnpm** (recommended package manager)
+- **Docker** (for local ChromaDB + MongoDB)
+- (Optional) **Ollama** for local LLM inference
+
+### 1. Clone & Install
+
+```bash
+git clone https://github.com/your-org/pixelpwnz.git
+cd pixelpwnz
+
+# Install all dependencies (uses pnpm workspaces)
+pnpm install
+
+# Or install individually:
+# cd backend && npm install && cd ..
+# cd web && npm install && cd ..
+# cd mobile && npm install && cd ..
 ```
 
----
+### 2. Start Infrastructure
 
-## 🛠️ Tech Stack
-* **Frontend**: React (Vite), Vanilla CSS, Tailwind CSS utilities (where requested), Lucide Icons, Axios.
-* **Backend**: Node.js, Express.js.
-* **Vector DB**: ChromaDB.
-* **Database**: MongoDB (Atlas).
-* **WhatsApp Orchestration**: Puppeteer, `whatsapp-web.js` (LocalAuth).
-* **LLM Engine**: Groq (Llama-3.3-70b-versatile) / Ollama.
-* **Mobile Client**: React Native, Expo 54.
+```bash
+cd backend
+docker compose up -d
+# Starts: ChromaDB (port 8000), MongoDB (port 27017), Ollama (port 11434)
+```
 
----
+### 3. Configure Environment
 
-## 📂 Codebase Directory Structure
+```bash
+# Backend — defaults work with Docker, but copy and tweak as needed
+cp backend/.env.example backend/.env
+
+# Web — point to your local backend
+cp web/.env.example web/.env
+# Edit web/.env: VITE_API_BASE_URL=http://localhost:5000/api
+
+# Mobile — point to your backend
+# Set EXPO_PUBLIC_API_URL in your shell or .env
+```
+
+### 4. Seed Personas (optional)
+
+```bash
+cd backend
+node upload-personas.js
+# Populates the database with predefined personas
+```
+
+### 5. Run
+
+```bash
+# Terminal 1: Backend API (http://localhost:5000)
+cd backend && npm run dev
+
+# Terminal 2: Web app (http://localhost:5173)
+cd web && npm run dev
+
+# Terminal 3: Mobile (Expo Go / simulator)
+cd mobile && npm start
+```
+
+## Project Structure
 
 ```
-pixelpwnz-HackSprint/
-├── backend/
+pixelpwnz/
+├── backend/                        # Express API server
 │   ├── src/
-│   │   ├── brain/            # Embedding, ChromaDB queries, and prompt compilation
-│   │   │   ├── chromaClient.js
-│   │   │   ├── embedder.js
-│   │   │   ├── promptBuilder.js
-│   │   │   └── retriever.js
-│   │   ├── db/               # MongoDB configuration and connection
-│   │   ├── llm/              # Ollama and Groq API adapters
-│   │   │   └── provider.js
-│   │   ├── middleware/       # JWT Auth and file upload parser configurations
-│   │   ├── models/           # Mongoose schemas (User, Session, ChatMessage)
-│   │   ├── parser/           # Regex-based WhatsApp chat text parser
-│   │   ├── routes/           # Express API endpoints
-│   │   └── whatsapp/         # Puppeteer-based whatsapp-web.js handlers
-│   │       └── client.js
-│   └── package.json
-└── web/
-    ├── src/
-    │   ├── api/              # Axios instance and API abstraction
-    │   ├── components/       # Reusable layout and UI elements (DashboardLayout, etc.)
-    │   ├── pages/            # Core pages (ChatPage, ExplorePage, UploadPage)
-    │   │   └── app-dashboard/# Sub-pages (NewDashboardPage, WhatsAppPage, NewProfilePage)
-    │   ├── store/            # Zustand state management (authStore, uiStore)
-    │   └── App.jsx
-    └── package.json
+│   │   ├── brain/                  # AI core
+│   │   │   ├── chromaClient.js     # ChromaDB vector store client
+│   │   │   ├── embedder.js         # HuggingFace embedding pipeline
+│   │   │   ├── index.js            # Brain module orchestrator
+│   │   │   ├── personas.js         # Persona definitions & seed data
+│   │   │   ├── promptBuilder.js    # RAG prompt construction
+│   │   │   ├── reranker.js         # Result re-ranking logic
+│   │   │   ├── retriever.js        # Vector similarity search
+│   │   │   └── PROMPTS.md          # Prompt engineering docs
+│   │   ├── llm/
+│   │   │   └── provider.js         # LLM abstraction (Ollama, OpenAI, Groq)
+│   │   ├── middleware/
+│   │   │   ├── auth.js             # JWT authentication
+│   │   │   ├── errorHandler.js     # Global error handling
+│   │   │   └── upload.js           # Multer file upload config
+│   │   ├── models/
+│   │   │   ├── ChatMessage.js      # Chat message schema
+│   │   │   ├── Persona.js          # Persona schema
+│   │   │   └── User.js             # User account schema
+│   │   ├── parser/
+│   │   │   ├── index.js            # WhatsApp chat parser
+│   │   │   └── regex.js            # Regex patterns for chat parsing
+│   │   ├── routes/
+│   │   │   ├── auth.js             # Register, login, profile
+│   │   │   ├── chat.js             # Chat with clone
+│   │   │   ├── config.js           # Public config endpoint
+│   │   │   ├── persona.js          # Persona CRUD & bookmarks
+│   │   │   ├── session.js          # Session CRUD
+│   │   │   ├── sessions.js         # List user sessions
+│   │   │   ├── stats.js            # Conversation analytics
+│   │   │   ├── upload.js           # Chat file upload
+│   │   │   └── whatsapp.js         # WhatsApp integration routes
+│   │   ├── store/
+│   │   │   ├── Session.js          # Session model
+│   │   │   └── sessionStore.js     # In-memory + MongoDB session store
+│   │   ├── whatsapp/
+│   │   │   └── client.js           # WhatsApp Web client (whatsapp-web.js)
+│   │   ├── config.js               # Environment configuration
+│   │   ├── db.js                   # MongoDB connection (with in-memory fallback)
+│   │   └── index.js                # Express app entry point
+│   ├── tests/
+│   │   ├── fixtures/               # Test chat exports
+│   │   │   ├── simple-chat.txt
+│   │   │   ├── group-chat.txt
+│   │   │   └── media-heavy.txt
+│   │   ├── auth.integration.test.js
+│   │   ├── chat.integration.test.js
+│   │   ├── latency.test.js
+│   │   ├── parser.test.js
+│   │   ├── promptBuilder.test.js
+│   │   ├── retriever.test.js
+│   │   ├── sessions.integration.test.js
+│   │   └── upload.integration.test.js
+│   ├── docker-compose.yml          # ChromaDB + MongoDB + Ollama
+│   ├── upload-personas.js          # Persona seed script
+│   ├── vitest.config.js            # Test configuration
+│   ├── pnpm-workspace.yaml         # pnpm workspace config
+│   └── .env.example                # Environment variables template
+│
+├── web/                            # React web application
+│   ├── src/
+│   │   ├── api/
+│   │   │   └── client.js           # Axios HTTP client
+│   │   ├── components/
+│   │   │   ├── ui/                 # Primitive UI components
+│   │   │   │   ├── card.jsx
+│   │   │   │   └── skeleton.jsx
+│   │   │   ├── DashboardLayout.jsx
+│   │   │   ├── DeleteModal.jsx
+│   │   │   ├── Footer.jsx
+│   │   │   ├── InsightsModal.jsx
+│   │   │   ├── InteractiveDotGrid.jsx
+│   │   │   ├── MessageBubble.jsx
+│   │   │   ├── MessageList.jsx
+│   │   │   ├── Navbar.jsx
+│   │   │   ├── PremiumLoader.jsx
+│   │   │   ├── PrivacyModal.jsx
+│   │   │   ├── ProtectedRoute.jsx
+│   │   │   ├── StatsPanel.jsx
+│   │   │   ├── ThemeToggle.jsx
+│   │   │   └── ToastProvider.jsx
+│   │   ├── pages/
+│   │   │   ├── app-dashboard/      # Dashboard sub-pages
+│   │   │   │   ├── BookmarksPage.jsx
+│   │   │   │   ├── NewDashboardPage.jsx
+│   │   │   │   ├── NewProfilePage.jsx
+│   │   │   │   ├── NotificationsPage.jsx
+│   │   │   │   └── WhatsAppPage.jsx
+│   │   │   ├── ChatPage.jsx
+│   │   │   ├── CreateNewPage.jsx
+│   │   │   ├── DashboardPage.jsx
+│   │   │   ├── DemoPage.jsx
+│   │   │   ├── DocsPage.jsx
+│   │   │   ├── ExplorePage.jsx
+│   │   │   ├── LandingPage.jsx
+│   │   │   ├── LoginPage.jsx
+│   │   │   ├── NotFoundPage.jsx
+│   │   │   ├── ProfilePage.jsx
+│   │   │   ├── SecurityPage.jsx
+│   │   │   └── UploadPage.jsx
+│   │   ├── sections/               # Landing page sections
+│   │   │   ├── AboutSection.jsx
+│   │   │   ├── CtaSection.jsx
+│   │   │   ├── DemoSection.jsx
+│   │   │   ├── DocsSection.jsx
+│   │   │   ├── FaqSection.jsx
+│   │   │   ├── FeaturesPreviewSection.jsx
+│   │   │   ├── HeroSection.jsx
+│   │   │   ├── HowItWorksSection.jsx
+│   │   │   ├── PrivacySection.jsx
+│   │   │   ├── SecuritySection.jsx
+│   │   │   └── TrustedSection.jsx
+│   │   ├── store/
+│   │   │   ├── authStore.js        # Auth state (Zustand)
+│   │   │   ├── chatStore.js        # Chat state (Zustand)
+│   │   │   └── uiStore.js          # UI/theme state (Zustand)
+│   │   ├── assets/                 # Static assets
+│   │   │   ├── hero.png
+│   │   │   ├── react.svg
+│   │   │   └── vite.svg
+│   │   ├── App.jsx                 # Root component with router
+│   │   ├── main.jsx                # Vite entry point
+│   │   └── index.css               # Global styles + design tokens
+│   ├── public/                     # Public assets
+│   │   ├── favicon.png
+│   │   ├── favicon.svg
+│   │   ├── icons.svg
+│   │   └── logo.png
+│   ├── .oxlintrc.json              # Oxlint configuration
+│   ├── index.html
+│   ├── vite.config.js
+│   ├── netlify.toml                # Netlify deployment config
+│   └── .env.example
+│
+├── mobile/                         # React Native / Expo app
+│   ├── api/
+│   │   └── client.ts               # Axios HTTP client
+│   ├── components/
+│   │   ├── StatsHeader.tsx
+│   │   └── ThinkingDots.tsx
+│   ├── constants/
+│   │   └── theme.ts                # Design tokens (colors, typography, spacing)
+│   ├── navigation/
+│   │   ├── AppNavigator.tsx        # Root navigator
+│   │   ├── AuthNavigator.tsx       # Auth flow navigator
+│   │   └── MainTabNavigator.tsx    # Bottom tab navigator
+│   ├── screens/
+│   │   ├── BookmarksScreen.tsx
+│   │   ├── ChatScreen.tsx
+│   │   ├── DiscoverScreen.tsx
+│   │   ├── HomeScreen.tsx
+│   │   ├── LandingScreen.tsx
+│   │   ├── LoginScreen.tsx
+│   │   ├── PrivacyModal.tsx
+│   │   ├── ProfileScreen.tsx
+│   │   ├── RegisterScreen.tsx
+│   │   └── UploadScreen.tsx
+│   ├── store/
+│   │   ├── authSlice.ts            # Auth state (Redux)
+│   │   ├── bookmarksSlice.ts       # Bookmarks state (Redux)
+│   │   ├── chatSlice.ts            # Chat state (Redux)
+│   │   ├── sessionSlice.ts         # Session state (Redux)
+│   │   ├── hooks.ts                # Typed Redux hooks
+│   │   └── index.ts                # Redux store configuration
+│   ├── assets/                     # App icons & splash screen
+│   │   ├── icon.png
+│   │   ├── splash-icon.png
+│   │   ├── favicon.png
+│   │   ├── android-icon-background.png
+│   │   ├── android-icon-foreground.png
+│   │   └── android-icon-monochrome.png
+│   ├── App.tsx                     # Root component
+│   ├── index.ts                    # Expo entry point
+│   ├── app.config.js               # Expo configuration
+│   ├── eas.json                    # EAS Build profiles
+│   ├── babel.config.js
+│   ├── tsconfig.json
+│   └── .env.example
+│
+├── render.yaml                     # Render.com deployment manifest
+├── package-lock.json               # Root lockfile
+└── README.md                       # This file
 ```
 
----
+## API
 
-## 🔌 Super Detailed API Documentation
+The backend exposes a RESTful API at `/api`. Key endpoints:
 
-### 🔐 Authentication
+### Authentication
 
-#### `POST /api/auth/register`
-Creates a new user profile.
-* **Request Body**:
-  ```json
-  {
-    "name": "Rishab",
-    "email": "rishab@example.com",
-    "password": "securepassword123"
-  }
-  ```
-* **Response (201 Created)**:
-  ```json
-  {
-    "success": true,
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "user": {
-      "id": "6a510098833b36ef32ee2251",
-      "name": "Rishab",
-      "email": "rishab@example.com"
-    }
-  }
-  ```
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/auth/register` | Register a new user |
+| `POST` | `/api/auth/login` | Login |
+| `GET` | `/api/auth/me` | Get current user profile |
 
-#### `POST /api/auth/login`
-Logs in an existing user.
-* **Request Body**:
-  ```json
-  {
-    "email": "rishab@example.com",
-    "password": "securepassword123"
-  }
-  ```
-* **Response (200 OK)**:
-  ```json
-  {
-    "success": true,
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "user": {
-      "id": "6a510098833b36ef32ee2251",
-      "name": "Rishab",
-      "email": "rishab@example.com"
-    }
-  }
-  ```
+### Sessions & Chat
 
----
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/upload` | Upload chat file (multipart) |
+| `POST` | `/api/chat` | Send message to your clone |
+| `GET` | `/api/session/:id` | Get session details |
+| `DELETE` | `/api/session/:id` | Delete a session |
+| `GET` | `/api/sessions` | List user's sessions |
+| `GET` | `/api/stats/:id` | Get session statistics |
 
-### 🧠 Brain Sessions
+### Personas
 
-#### `GET /api/sessions`
-Fetches the active custom brains for the logged-in user.
-* **Headers**: `Authorization: Bearer <token>`
-* **Response (200 OK)**:
-  ```json
-  {
-    "success": true,
-    "sessions": [
-      {
-        "session_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
-        "contact_name": "Vineet / Rishab",
-        "created_at": "2026-07-11T05:32:00.000Z",
-        "pair_count": 3175,
-        "isCustom": true
-      }
-    ]
-  }
-  ```
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/persona/bookmarks` | Get bookmarked personas |
+| `POST` | `/api/persona/:id/bookmark` | Toggle persona bookmark |
 
-#### `POST /api/upload`
-Uploads a `.txt` WhatsApp conversation log to extract a persona.
-* **Headers**: `Authorization: Bearer <token>`
-* **Content-Type**: `multipart/form-data`
-* **Multipart Fields**:
-  - `chatFile`: (The raw `.txt` file)
-  - `user_name`: "Rishab"
-* **Response (200 OK)**:
-  ```json
-  {
-    "success": true,
-    "session_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
-    "user_name": "Rishab",
-    "contact_name": "Vineet / Rishab",
-    "total_pairs_extracted": 3175,
-    "estimated_generation_time_ms": 11112
-  }
-  ```
+### System
 
----
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/config` | Get public configuration |
+| `GET` | `/api/health` | Health check |
 
-### 🟢 WhatsApp Auto-Pilot
+See the [full API documentation](https://signet-web.vercel.app/docs) for details.
 
-#### `GET /api/whatsapp/status`
-Checks the current connection state of the user's headless WhatsApp client.
-* **Headers**: `Authorization: Bearer <token>`
-* **Response (200 OK)**:
-  ```json
-  {
-    "success": true,
-    "status": "connected",
-    "autoPilotConfig": {
-      "enabled": true,
-      "sessionId": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
-      "waitTimeMs": 30000,
-      "allowedChats": ["919876543210@c.us", "60924580876363@lid"]
-    }
-  }
-  ```
+## Deployment
 
-#### `POST /api/whatsapp/toggle`
-Saves your Auto-Pilot preferences (timeout, target brain, allowed contact list).
-* **Headers**: `Authorization: Bearer <token>`
-* **Request Body**:
-  ```json
-  {
-    "enabled": true,
-    "sessionId": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
-    "waitTimeMs": 10000,
-    "allowedChats": ["919876543210@c.us"]
-  }
-  ```
-* **Response (200 OK)**:
-  ```json
-  {
-    "success": true,
-    "autoPilotConfig": {
-      "enabled": true,
-      "sessionId": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
-      "waitTimeMs": 10000,
-      "allowedChats": ["919876543210@c.us"]
-    }
-  }
-  ```
+### Backend (Render)
+
+The backend is deployed via `render.yaml` which defines two services:
+- **signet-backend** — Node.js web service
+- **signet-chromadb** — ChromaDB Docker service
+
+Environment variables are configured for production (CORS, JWT secret, LLM provider, etc.).
+
+### Frontend (Netlify)
+
+The web frontend is configured for Netlify deployment via `web/netlify.toml`:
+
+```toml
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+```
+
+Set `VITE_API_BASE_URL` to your production backend URL in the Netlify dashboard.
+
+### Mobile (EAS)
+
+The mobile app uses Expo EAS Build with three profiles in `mobile/eas.json`:
+- `development` — Dev client with internal distribution
+- `preview` — Internal testing
+- `production` — App store submission
+
+## Testing
+
+```bash
+# Backend tests (Vitest)
+cd backend
+npm test              # Run all tests
+npm run test:watch    # Watch mode
+npm run test:bench    # Benchmarks
+
+# Web linting
+cd web
+npm run lint          # Oxlint
+```
+
+The backend has integration tests for:
+
+| Test Suite | File | What It Covers |
+|-----------|------|----------------|
+| Auth | `tests/auth.integration.test.js` | Register, login, token validation |
+| Chat | `tests/chat.integration.test.js` | Message flow, RAG pipeline |
+| Upload | `tests/upload.integration.test.js` | File parsing, ingestion |
+| Sessions | `tests/sessions.integration.test.js` | CRUD, expiry |
+| Retriever | `tests/retriever.test.js` | Vector search relevance |
+| Parser | `tests/parser.test.js` | WhatsApp format parsing |
+| Prompt Builder | `tests/promptBuilder.test.js` | Prompt construction |
+| Latency | `tests/latency.test.js` | Response time benchmarks |
+
+Test fixtures are located in `backend/tests/fixtures/` and include sample WhatsApp exports (`simple-chat.txt`, `group-chat.txt`, `media-heavy.txt`).
+
+## Built With
+
+- [React](https://react.dev/) · [Vite](https://vite.dev/) · [Tailwind CSS](https://tailwindcss.com/)
+- [Expo](https://expo.dev/) · [React Native](https://reactnative.dev/)
+- [Express](https://expressjs.com/) · [MongoDB](https://www.mongodb.com/) · [Mongoose](https://mongoosejs.com/)
+- [ChromaDB](https://www.trychroma.com/) · [HuggingFace Transformers](https://huggingface.co/docs/transformers/)
+- [Ollama](https://ollama.ai/) · [OpenAI](https://openai.com/) · [Groq](https://groq.com/)
+- [whatsapp-web.js](https://wwebjs.dev/) · [Puppeteer](https://pptr.dev/)
+- [Render](https://render.com/) · [Netlify](https://www.netlify.com/) · [EAS](https://expo.dev/eas)
 
 ---
 
-## 📱 Mobile App Overview (Expo 54)
-Designed by **Daksh**, the mobile client is built on **Expo 54** to give users a native dashboard experience on Android and iOS:
-* **Real-time Configuration**: Instantly syncs with the Express backend to toggle the Auto-Pilot engine or move the wait-time slider from your phone.
-* **Live Notifications**: Receives system push notifications when the Auto-Pilot replies to a contact on WhatsApp, showing you the transcript of what your AI clone sent.
-* **File Upload Integration**: Accesses the native mobile file system to pick and upload chat exports (`.txt` files) directly to the server.
+<div align="center">
 
----
+<br />
 
-## 🚀 Setup & Installation
+Made with ❤️ by [PixelPwnz](https://github.com/pixelpwnz)
 
-### Prereqs
-* Node.js v18+
-* MongoDB database
-* Local ChromaDB instance
-
-### Setup
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/rishab11250/pixelpwnz-HackSprint.git
-   cd pixelpwnz-HackSprint
-   ```
-2. Configure `.env` in the `backend/` directory:
-   ```env
-   PORT=5000
-   MONGODB_URI=mongodb+srv://...
-   CHROMA_URL=http://localhost:8000
-   GROQ_API_KEY=gsk_...
-   ```
-3. Install dependencies and start developers servers:
-   ```bash
-   # Backend
-   cd backend
-   pnpm install
-   pnpm run dev
-
-   # Frontend
-   cd ../web
-   pnpm install
-   pnpm run dev
-   ```
-
----
-
-## ☁️ Deployment Guidelines
-
-### Running on a VPS (AWS EC2 / DigitalOcean)
-To ensure the Puppeteer client runs smoothly on Ubuntu:
-1. Install Chromium system libraries:
-   ```bash
-   sudo apt-get update
-   sudo apt-get install -y gconf-service libasound2 libatk1.0-0 libc6 libcairo2 libcups2 libdbus-1-3 libexpat1 libfontconfig1 libgcc1 libgconf-2-4 libgdk-pixbuf2.0-0 libglib2.0-0 libgtk-3-0 libnspr4 libpango-1.0-0 libpangocairo-1.0-0 libstdc++6 libx11-6 libx11-xcb1 libxcb1 libxcomposite1 libxcursor1 libxdamage1 libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 libxtst6 ca-certificates fonts-liberation libappindicator1 libnss3 lsb-release xdg-utils wget
-   ```
-2. Set Environment Variables:
-   ```bash
-   PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-   PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
-   ```
-
----
-
-## 👥 Dev Team & Contributions
-
-| Member | Role & Ownership | GitHub |
-| :--- | :--- | :--- |
-| **Rishab** | Prompt Engineering, WhatsApp integration & Vector DB | [@rishab11250](https://github.com/rishab11250) |
-| **Ronit** | Web App — Full Design & UI/UX Frontend | [@RonitkumarSoni](https://github.com/RonitkumarSoni) |
-| **Daksh** | Mobile App Development (Expo 54) | [@daksh006v](https://github.com/daksh006v) |
-| **Vineet** | Backend Routing & LLM Orchestration | [@vineet1cg](https://github.com/vineet1cg) |
+</div>
